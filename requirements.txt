@@ -1,0 +1,4 @@
+watchdog
+Pillow
+moviepy
+requests

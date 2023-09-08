@@ -8,6 +8,10 @@ from PIL import Image
 import moviepy.editor as mp
 import requests
 import os
+import json
+
+# Start the SMTP server script as a subprocess
+smtp_server_process = subprocess.Popen(['python3', 'pyemail.py'])
 
 # Function to terminate the SMTP server process when the main script exits
 
@@ -18,21 +22,83 @@ def terminate_process(process):
     process.wait()
 
 
-# Start the SMTP server script as a subprocess
-smtp_server_process = subprocess.Popen(['python3', 'pyemail.py'])
-
 # Register the termination function to run when this script exits
 atexit.register(terminate_process, smtp_server_process)
 
+
+# Checks for config file with key and token / creates it if not found and asks user for values
+
+
+def load_or_create_config():
+    config_file = 'config.json'
+    if os.path.exists(config_file):
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+    else:
+        config = {}
+        config['PUSHOVER_APP_TOKEN'] = input('Enter your Pushover App Token: ')
+        config['PUSHOVER_USER_KEY'] = input('Enter your Pushover User Key: ')
+        with open(config_file, 'w') as f:
+            json.dump(config, f)
+    return config
+
+
 # Pushover credentials
-PUSHOVER_APP_TOKEN = ""
-PUSHOVER_USER_KEY = ""
+config = load_or_create_config()
+PUSHOVER_APP_TOKEN = config['PUSHOVER_APP_TOKEN']
+PUSHOVER_USER_KEY = config['PUSHOVER_USER_KEY']
 # URL to open Reolink app
 URL = "fb1675493782511558://"
 URL_TITLE = "Open Reolink"
 
-watch_folder = "/Applications/reolink-rich-notifications/email"
-image_folder = "/Applications/reolink-rich-notifications/attachments"
+# Create `email` and `attachments` folder
+
+
+def ensure_directories_exist():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    folders = ['email', 'attachments']
+
+    for folder in folders:
+        full_path = os.path.join(script_dir, folder)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+
+
+# Ensure required directories exist
+ensure_directories_exist()
+current_dir = os.path.dirname(os.path.abspath(__file__))
+watch_folder = os.path.join(current_dir, 'email')
+image_folder = os.path.join(current_dir, 'attachments')
+
+# Checks for config file with key and token / creates it if not found and asks user for values
+
+
+def load_or_create_config():
+    config_file = 'config.json'
+    if os.path.exists(config_file):
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+    else:
+        config = {}
+        config['PUSHOVER_APP_TOKEN'] = input('Enter your Pushover App Token: ')
+        config['PUSHOVER_USER_KEY'] = input('Enter your Pushover User Key: ')
+        with open(config_file, 'w') as f:
+            json.dump(config, f)
+    return config
+
+# Create `email` and `attachments` folder
+
+
+def ensure_directories_exist():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    folders = ['email', 'attachments']
+
+    for folder in folders:
+        full_path = os.path.join(script_dir, folder)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+
+# Resizes images if needed
 
 
 def resize_image(image_path):
@@ -41,6 +107,8 @@ def resize_image(image_path):
         img = Image.open(image_path)
         img.save(image_path, "JPEG", quality=quality)
         quality -= 10  # reduce quality by 10% each iteration
+
+# Converts video to .gif
 
 
 def convert_mp4_to_gif(mp4_path, gif_path):

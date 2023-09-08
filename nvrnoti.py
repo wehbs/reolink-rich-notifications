@@ -31,8 +31,8 @@ PUSHOVER_USER_KEY = ""
 URL = "fb1675493782511558://"
 URL_TITLE = "Open Reolink"
 
-watch_folder = "/Applications/reolink_notifications/email"
-image_folder = "/Applications/reolink_notifications/attachments"
+watch_folder = "/Applications/reolink-rich-notifications/email"
+image_folder = "/Applications/reolink-rich-notifications/attachments"
 
 
 def resize_image(image_path):

@@ -14,7 +14,7 @@ class CustomSMTPServer(smtpd.SMTPServer):
         file_uuid = uuid.uuid4().hex
 
         # Create a directory to store email payloads
-        email_folder = "/Applications/reolink_notifications/email"
+        email_folder = "/Applications/reolink-rich-notifications/email"
         if not os.path.exists(email_folder):
             os.makedirs(email_folder)
 

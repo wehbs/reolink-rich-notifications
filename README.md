@@ -51,7 +51,7 @@ Create these two additional folders
 
 ## Configuration
 
-- Add your Pushover API keys and tokens to the `nvrnoti.py` script.
+- Add your Pushover API key and token to the `nvrnoti.py` script.
 - Configure your Reolink device to send emails to the SMTP server started by `pyemail.py`.
 
 ```

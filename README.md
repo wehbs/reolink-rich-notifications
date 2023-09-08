@@ -106,3 +106,5 @@ end tell
 **Note**: Executing this AppleScript will open a Terminal window each time you boot up your Mac.
 
 For additional customization or troubleshooting, consult the inline comments and documentation in the codebase.
+
+[![Buy Me A Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/wehbs)

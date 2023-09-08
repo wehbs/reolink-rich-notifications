@@ -2,3 +2,5 @@
 .DS_Store
 launchNvrnoti.app
 config.json
+attachments/
+email/

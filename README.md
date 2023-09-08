@@ -36,10 +36,11 @@ reolink-rich-notifications/
 |-- requirements.txt
 ```
 
-Create these two additional folders
+These will get created after the scripts first run
 ```
 |-- attachments/
 |-- email/
+|-- config.json/
 ```
 
 ### Installation Steps
@@ -51,7 +52,7 @@ Create these two additional folders
 
 ## Configuration
 
-- Add your Pushover API key and token to the `nvrnoti.py` script.
+- Input your Pushover API key and token the first time the script is ran.
 - Configure your Reolink device to send emails to the SMTP server started by `pyemail.py`.
 
 ```

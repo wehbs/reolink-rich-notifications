@@ -44,7 +44,7 @@ Create these two additional folders
 
 ### Installation Steps
 
-1. Clone the repository: `git clone https://github.com/your-username/reolink-rich-notifications.git` into the `/Applications` folder
+1. Clone the repository: `git clone https://github.com/wehbs/reolink-rich-notifications.git` into the `/Applications` folder
 2. Navigate into the directory: `cd /Applications/reolink-rich-notifications`
 3. Install Python packages: `pip3 install -r requirements.txt`
 4. Install FFMpeg: `brew install ffmpeg`

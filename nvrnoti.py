@@ -1,6 +1,7 @@
 import subprocess
 import atexit
 from watchdog.observers import Observer
+import time
 from watchdog.events import FileSystemEventHandler
 from email import policy
 from email.parser import BytesParser
@@ -8,7 +9,9 @@ from PIL import Image
 import moviepy.editor as mp
 import requests
 import os
+import sys
 import json
+import logging
 
 # Start the SMTP server script as a subprocess
 smtp_server_process = subprocess.Popen(['python3', 'pyemail.py'])
@@ -199,38 +202,57 @@ class Handler(FileSystemEventHandler):
                     "url": URL,
                     "url_title": URL_TITLE
                 }
-                files = {
-                    "attachment": (attachment_filename, open(attachment_path, "rb"))
-                }
+                # Initialize an empty dictionary for files
+                files = {}
+                # Add the attachment to the files dictionary if it exists
+                if attachment_filename:
+                    files["attachment"] = (
+                        attachment_filename, open(attachment_path, "rb"))
 
-                response = requests.post(
-                    "https://api.pushover.net/1/messages.json", data=payload, files=files)
-                response_data = response.json()
+                # Retry sending the push notification up to 3 times
+                max_retries = 3
+                for i in range(max_retries):
+                    try:
+                        response = requests.post(
+                            "https://api.pushover.net/1/messages.json", data=payload, files=files if files else None, timeout=10)
+                        response_data = response.json()
+                        break  # If successful, break the loop
+                    except requests.exceptions.RequestException as e:
+                        logging.error(
+                            f"Failed to send push notification (attempt {i + 1}): {e}")
+                        if i < max_retries - 1:
+                            time.sleep(5)  # Wait for 5 seconds before retrying
+                        else:
+                            print(
+                                "All retries failed. There might be an issue with the Pushover server.")
+                            print("Please restart the script later.")
+                            sys.exit(1)
 
+                # If the push notification was sent successfully, print a message
                 if response_data.get("status") == 1:
                     print("Push sent successfully.")
 
                     mp4_path = ""
 
+                    # Store the .mp4 file path if the attachment is a video
                     if attachment_filename.endswith('.mp4'):
                         mp4_path = attachment_path.replace('.gif', '.mp4')
 
-                    # Delete the .gif file after storing .mp4 path
-                    os.remove(attachment_path)
+                # Delete the .gif file after storing .mp4 path
+                if attachment_path and os.path.exists(attachment_path):
 
+                    # Check if the attachment file exists before attempting to delete it
                     try:
                         if mp4_path:  # Only try to delete if mp4_path is not empty
                             os.remove(mp4_path)  # Try to delete the .mp4 file
                     except FileNotFoundError:
                         pass  # File doesn't exist, ignore the error
 
-                else:
-                    print(f"Failed to send push. Response: {response_data}")
-
     def on_created(self, event):
         self.process(event)
 
 
 if __name__ == '__main__':
+    # Create a Watcher instance and run it
     watcher = Watcher(watch_folder)
     watcher.run()

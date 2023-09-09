@@ -115,21 +115,25 @@ def resize_image(image_path):
 
 
 def convert_mp4_to_gif(mp4_path, gif_path):
-    clip = mp.VideoFileClip(mp4_path)
-
-    # Use only the first 10 seconds of the video after the first 5 seconds
-    clip = clip.subclip(5, 10)
-
-    # Write GIF 2 fps
-    clip.write_gif(gif_path, fps=2, program='ffmpeg')
-
-    if os.path.getsize(gif_path) > 2.4 * 1024 * 1024:
-        # If file size still too large, further reduce fps to 1
-        clip.write_gif(gif_path, fps=1, program='ffmpeg')
-
-    # Check file size again, if it's still too large, you may want to alert or log an error
-    if os.path.getsize(gif_path) > 2.4 * 1024 * 1024:
-        print("GIF file size is still too large.")
+    retries = 0
+    max_retries = 3
+    while retries < max_retries:
+        try:
+            clip = mp.VideoFileClip(mp4_path)
+            clip = clip.subclip(5, 10)
+            clip.write_gif(gif_path, fps=2, program='ffmpeg')
+            if os.path.getsize(gif_path) > 2.4 * 1024 * 1024:
+                clip.write_gif(gif_path, fps=1, program='ffmpeg')
+            if os.path.getsize(gif_path) > 2.4 * 1024 * 1024:
+                print("GIF file size is still too large.")
+            break  # Successfully converted, break out of loop
+        except Exception as e:
+            print(f"Failed to convert video to GIF: {e}. Retrying...")
+            retries += 1
+            time.sleep(2)
+    if retries == max_retries:
+        print("Max retries reached. Exiting.")
+        sys.exit(1)
 
 
 class Watcher:
@@ -240,7 +244,7 @@ class Handler(FileSystemEventHandler):
 
                 # Delete the .gif file after storing .mp4 path
                 if attachment_path and os.path.exists(attachment_path):
-
+                    os.remove(attachment_path)
                     # Check if the attachment file exists before attempting to delete it
                     try:
                         if mp4_path:  # Only try to delete if mp4_path is not empty

@@ -16,6 +16,46 @@ import logging
 # Start the SMTP server script as a subprocess
 smtp_server_process = subprocess.Popen(['python3', 'pyemail.py'])
 
+# Function to send push notification
+
+
+def send_push_notification(message, attachment_path=None):
+    payload = {
+        "token": PUSHOVER_APP_TOKEN,
+        "user": PUSHOVER_USER_KEY,
+        "message": message,
+        "url": URL,
+        "url_title": URL_TITLE
+    }
+    files = {}
+    if attachment_path:
+        attachment_filename = os.path.basename(attachment_path)
+        files["attachment"] = (attachment_filename,
+                               open(attachment_path, "rb"))
+
+    max_retries = 3
+    for i in range(max_retries):
+        try:
+            response = requests.post(
+                "https://api.pushover.net/1/messages.json", data=payload, files=files if files else None, timeout=10)
+            response_data = response.json()
+            if response_data.get("status") == 1:
+                print("Push sent successfully.")
+                break  # If successful, break the loop
+        except requests.exceptions.RequestException as e:
+            logging.error(
+                f"Failed to send push notification (attempt {i + 1}): {e}")
+            if i < max_retries - 1:
+                time.sleep(5)  # Wait for 5 seconds before retrying
+            else:
+                print(
+                    "All retries failed. There might be an issue with the Pushover server.")
+                print("Please restart the script later.")
+                sys.exit(1)
+
+    return response_data
+
+
 # Function to terminate the SMTP server process when the main script exits
 
 
@@ -23,6 +63,8 @@ def terminate_process(process):
     print("Terminating SMTP server process.")
     process.terminate()
     process.wait()
+    send_push_notification(
+        "reolink-rich-notifications has been terminated. Please restart.")
 
 
 # Register the termination function to run when this script exits
@@ -199,42 +241,9 @@ class Handler(FileSystemEventHandler):
                 os.remove(file_path)
 
                 # Send push notification via Pushover
-                payload = {
-                    "token": PUSHOVER_APP_TOKEN,
-                    "user": PUSHOVER_USER_KEY,
-                    "message": text_data,
-                    "url": URL,
-                    "url_title": URL_TITLE
-                }
-                # Initialize an empty dictionary for files
-                files = {}
-                # Add the attachment to the files dictionary if it exists
-                if attachment_filename:
-                    files["attachment"] = (
-                        attachment_filename, open(attachment_path, "rb"))
-
-                # Retry sending the push notification up to 3 times
-                max_retries = 3
-                for i in range(max_retries):
-                    try:
-                        response = requests.post(
-                            "https://api.pushover.net/1/messages.json", data=payload, files=files if files else None, timeout=10)
-                        response_data = response.json()
-                        break  # If successful, break the loop
-                    except requests.exceptions.RequestException as e:
-                        logging.error(
-                            f"Failed to send push notification (attempt {i + 1}): {e}")
-                        if i < max_retries - 1:
-                            time.sleep(5)  # Wait for 5 seconds before retrying
-                        else:
-                            print(
-                                "All retries failed. There might be an issue with the Pushover server.")
-                            print("Please restart the script later.")
-                            sys.exit(1)
-
-                # If the push notification was sent successfully, print a message
+                response_data = send_push_notification(
+                    text_data, attachment_path)
                 if response_data.get("status") == 1:
-                    print("Push sent successfully.")
 
                     mp4_path = ""
 
@@ -257,6 +266,10 @@ class Handler(FileSystemEventHandler):
 
 
 if __name__ == '__main__':
+    # Send the initial push notification
+    send_push_notification(
+        "reolink-rich-notifications has been started. Enjoy!")
+
     # Create a Watcher instance and run it
     watcher = Watcher(watch_folder)
     watcher.run()

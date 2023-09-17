@@ -6,12 +6,12 @@ from watchdog.events import FileSystemEventHandler
 from email import policy
 from email.parser import BytesParser
 from PIL import Image
-import moviepy.editor as mp
 import requests
 import os
 import sys
 import json
 import logging
+import imageio_ffmpeg as ffmpeg
 
 # Start the SMTP server script as a subprocess
 smtp_server_process = subprocess.Popen(['python3', 'pyemail.py'])
@@ -159,20 +159,39 @@ def resize_image(image_path):
 def convert_mp4_to_gif(mp4_path, gif_path):
     retries = 0
     max_retries = 3
+    scale = 480  # Initial scale width
     while retries < max_retries:
         try:
-            clip = mp.VideoFileClip(mp4_path)
-            clip = clip.subclip(5, 10)
-            clip.write_gif(gif_path, fps=2, program='ffmpeg')
-            if os.path.getsize(gif_path) > 2.4 * 1024 * 1024:
-                clip.write_gif(gif_path, fps=1, program='ffmpeg')
-            if os.path.getsize(gif_path) > 2.4 * 1024 * 1024:
-                print("GIF file size is still too large.")
-            break  # Successfully converted, break out of loop
+            input_file = mp4_path
+            output_file = gif_path
+
+            # FFmpeg command with dynamic scaling
+            ffmpeg_cmd = [
+                ffmpeg.get_ffmpeg_exe(),
+                "-i", input_file,  # Input file
+                # Video filter chain
+                "-vf", f"fps=5,scale={scale}:-1:flags=lanczos",
+                "-f", "gif",  # Output format
+                output_file  # Output file
+            ]
+
+            subprocess.run(ffmpeg_cmd, check=True)
+
+            file_size = os.path.getsize(gif_path)
+            if file_size > 2.4 * 1024 * 1024:
+                print("GIF file size is too large. Adjusting scale...")
+                scale = int(scale * 0.8)  # Reduce scale by 20%
+                retries += 1  # Increment retries
+                continue  # Skip to the next iteration
+            else:
+                print("GIF file size is acceptable.")
+                break  # Successfully converted, break out of loop
+
         except Exception as e:
             print(f"Failed to convert video to GIF: {e}. Retrying...")
             retries += 1
             time.sleep(2)
+
     if retries == max_retries:
         print("Max retries reached. Exiting.")
         sys.exit(1)

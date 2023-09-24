@@ -1,28 +1,37 @@
-import smtpd
-import asyncore
+from aiosmtpd.controller import Controller
+from aiosmtpd.handlers import Sink
 import os
 from email import policy
 from email.parser import BytesParser
 import uuid
 
-class CustomSMTPServer(smtpd.SMTPServer):
-    def process_message(self, peer, mailfrom, rcpttos, data, **kwargs):
-        # Parse email
-        msg = BytesParser(policy=policy.default).parsebytes(data)
 
-        # Generate a random UUID for the filename
+class CustomHandler(Sink):
+    async def handle_DATA(self, server, session, envelope):
+        print("Handling incoming email...")
+        msg = BytesParser(policy=policy.default).parsebytes(envelope.content)
+
         file_uuid = uuid.uuid4().hex
 
-        # Create a directory to store email payloads
-        email_folder = "/Applications/reolink-rich-notifications/email"
+        current_directory = os.path.dirname(os.path.abspath(__file__))
+        email_folder = os.path.join(current_directory, "email")
         if not os.path.exists(email_folder):
             os.makedirs(email_folder)
 
-        # Save the email itself
         with open(f"{email_folder}/{file_uuid}.eml", "wb") as f:
-            f.write(data)
+            f.write(envelope.content)
+
+        return '250 Message accepted for delivery'
+
 
 if __name__ == "__main__":
-    # Start the server on localhost, port 25
-    server = CustomSMTPServer(('0.0.0.0', 2525), None)
-    asyncore.loop()
+    handler = CustomHandler()
+    controller = Controller(handler, hostname="0.0.0.0", port=2525)
+    print("Starting server...")
+    controller.start()
+
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        print("Server stopped.")

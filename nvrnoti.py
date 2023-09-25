@@ -12,9 +12,72 @@ import sys
 import json
 import logging
 import imageio_ffmpeg as ffmpeg
+from aiosmtpd.controller import Controller
+from aiosmtpd.handlers import Sink
+from email import policy
+from email.parser import BytesParser
+import uuid
+import threading
 
-# Start the SMTP server script as a subprocess
-smtp_server_process = subprocess.Popen(['python3', 'pyemail.py'])
+
+# SMTP server
+
+
+class CustomHandler(Sink):
+    async def handle_DATA(self, server, session, envelope):
+        print("Handling incoming email...")
+        msg = BytesParser(policy=policy.default).parsebytes(envelope.content)
+
+        file_uuid = uuid.uuid4().hex
+
+        current_directory = os.path.dirname(os.path.abspath(__file__))
+        email_folder = os.path.join(current_directory, "email")
+        if not os.path.exists(email_folder):
+            os.makedirs(email_folder)
+
+        with open(f"{email_folder}/{file_uuid}.eml", "wb") as f:
+            f.write(envelope.content)
+
+        return '250 Message accepted for delivery'
+
+
+def start_email_server():
+    # Read config.json
+    try:
+        with open("config.json", "r") as f:
+            config = json.load(f)
+            port = config.get("SMTP_PORT", 2525) or 2525
+    except (FileNotFoundError, json.JSONDecodeError):
+        port = 2525
+
+    handler = CustomHandler()
+    controller = Controller(handler, hostname="0.0.0.0", port=port)
+    print(f"Starting server on port {port}...")
+    controller.start()
+
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        print("Server stopped.")
+
+
+# Start the SMTP server in a new thread
+email_server_thread = threading.Thread(target=start_email_server)
+# Daemon threads exit when the main program exits
+email_server_thread.daemon = True
+email_server_thread.start()
+
+# Send push notification when script is terminated
+
+
+def script_terminated():
+    send_push_notification(
+        "reolink-rich-notifications has been terminated. Please restart.")
+
+
+# Register the termination function to run when this script exits
+atexit.register(script_terminated)
 
 # Function to send push notification
 
@@ -54,21 +117,6 @@ def send_push_notification(message, attachment_path=None):
                 sys.exit(1)
 
     return response_data
-
-
-# Function to terminate the SMTP server process when the main script exits
-
-
-def terminate_process(process):
-    print("Terminating SMTP server process.")
-    process.terminate()
-    process.wait()
-    send_push_notification(
-        "reolink-rich-notifications has been terminated. Please restart.")
-
-
-# Register the termination function to run when this script exits
-atexit.register(terminate_process, smtp_server_process)
 
 
 # Checks for config file with key and token / creates it if not found and asks user for values
@@ -239,8 +287,16 @@ class Handler(FileSystemEventHandler):
                                 decode=True).decode().split(".")[0]
                         else:
                             attachment_filename = part.get_filename()
+                            # Generate a unique identifier
+                            unique_id = str(uuid.uuid4())[:8]
+                            base_name, file_extension = os.path.splitext(
+                                attachment_filename)
+
+                            # Append the unique identifier to the filename
+                            unique_filename = f"{base_name}_{unique_id}{file_extension}"
                             attachment_path = os.path.join(
-                                image_folder, attachment_filename)
+                                image_folder, unique_filename)
+
                             with open(attachment_path, 'wb') as f:
                                 f.write(part.get_payload(decode=True))
 

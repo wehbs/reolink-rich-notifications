@@ -21,6 +21,7 @@ import threading
 
 
 # SMTP server
+stop_event = threading.Event()
 
 
 class CustomHandler(Sink):
@@ -53,8 +54,8 @@ def start_email_server():
     controller.start()
 
     try:
-        while True:
-            pass
+        while not stop_event.is_set():
+            time.sleep(1)
     except KeyboardInterrupt:
         print("Server stopped.")
 
@@ -63,8 +64,20 @@ def start_email_server():
 
 
 def script_terminated():
+    stop_event.set()
     send_push_notification(
         "reolink-rich-notifications has been terminated. Please restart.")
+
+    # Remove all files in email and attachments folders
+    folders_to_clean = [watch_folder, image_folder]
+    for folder in folders_to_clean:
+        for filename in os.listdir(folder):
+            file_path = os.path.join(folder, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                print(f"Failed to delete {file_path}. Reason: {e}")
 
 
 # Register the termination function to run when this script exits

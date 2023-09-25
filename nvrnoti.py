@@ -26,14 +26,11 @@ import threading
 class CustomHandler(Sink):
     async def handle_DATA(self, server, session, envelope):
         print("Handling incoming email...")
-        msg = BytesParser(policy=policy.default).parsebytes(envelope.content)
 
         file_uuid = uuid.uuid4().hex
 
-        current_directory = os.path.dirname(os.path.abspath(__file__))
+        current_directory = os.path.dirname(sys.executable)
         email_folder = os.path.join(current_directory, "email")
-        if not os.path.exists(email_folder):
-            os.makedirs(email_folder)
 
         with open(f"{email_folder}/{file_uuid}.eml", "wb") as f:
             f.write(envelope.content)
@@ -61,12 +58,6 @@ def start_email_server():
     except KeyboardInterrupt:
         print("Server stopped.")
 
-
-# Start the SMTP server in a new thread
-email_server_thread = threading.Thread(target=start_email_server)
-# Daemon threads exit when the main program exits
-email_server_thread.daemon = True
-email_server_thread.start()
 
 # Send push notification when script is terminated
 
@@ -131,24 +122,18 @@ def load_or_create_config():
         config = {}
         config['PUSHOVER_APP_TOKEN'] = input('Enter your Pushover App Token: ')
         config['PUSHOVER_USER_KEY'] = input('Enter your Pushover User Key: ')
+        config['SMTP_PORT'] = input(
+            'Enter the SMTP port to use (default is 2525, press Enter to use default): ')
         with open(config_file, 'w') as f:
             json.dump(config, f)
     return config
 
 
-# Pushover credentials
-config = load_or_create_config()
-PUSHOVER_APP_TOKEN = config['PUSHOVER_APP_TOKEN']
-PUSHOVER_USER_KEY = config['PUSHOVER_USER_KEY']
-# URL to open Reolink app
-URL = "fb1675493782511558://"
-URL_TITLE = "Open Reolink"
-
 # Create `email` and `attachments` folder
 
 
 def ensure_directories_exist():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = os.path.dirname(sys.executable)
     folders = ['email', 'attachments']
 
     for folder in folders:
@@ -159,37 +144,25 @@ def ensure_directories_exist():
 
 # Ensure required directories exist
 ensure_directories_exist()
-current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Direcotry paths
+current_dir = os.path.dirname(sys.executable)
 watch_folder = os.path.join(current_dir, 'email')
 image_folder = os.path.join(current_dir, 'attachments')
 
-# Checks for config file with key and token / creates it if not found and asks user for values
+# Pushover credentials
+config = load_or_create_config()
+PUSHOVER_APP_TOKEN = config['PUSHOVER_APP_TOKEN']
+PUSHOVER_USER_KEY = config['PUSHOVER_USER_KEY']
+# URL to open Reolink app
+URL = "fb1675493782511558://"
+URL_TITLE = "Open Reolink"
 
-
-def load_or_create_config():
-    config_file = 'config.json'
-    if os.path.exists(config_file):
-        with open(config_file, 'r') as f:
-            config = json.load(f)
-    else:
-        config = {}
-        config['PUSHOVER_APP_TOKEN'] = input('Enter your Pushover App Token: ')
-        config['PUSHOVER_USER_KEY'] = input('Enter your Pushover User Key: ')
-        with open(config_file, 'w') as f:
-            json.dump(config, f)
-    return config
-
-# Create `email` and `attachments` folder
-
-
-def ensure_directories_exist():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    folders = ['email', 'attachments']
-
-    for folder in folders:
-        full_path = os.path.join(script_dir, folder)
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
+# Start the SMTP server in a new thread
+email_server_thread = threading.Thread(target=start_email_server)
+# Daemon threads exit when the main program exits
+email_server_thread.daemon = True
+email_server_thread.start()
 
 # Resizes images if needed
 

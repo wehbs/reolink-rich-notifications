@@ -21,20 +21,15 @@ This repository enhances the notification capabilities of Reolink NVRs and Camer
 
 ### Software Requirements
 
-- MacOS
-- Python 3.x
 - FFMpeg
 
+### Installation Steps
+
+1. Download the latest release [here](https://github.com/wehbs/reolink-rich-notifications/releases/download/latest/nvrnoti.macos.arm64)
+2. Install FFMpeg: `brew install ffmpeg`
+3. Run the binary ```./nvrnoti.macos.arm64```
+
 ### Folder Structure
-
-After cloning this repository into `/Applications` on MacOS, your folder structure should look like this:
-
-```
-reolink-rich-notifications/
-|-- nvrnoti.py
-|-- pyemail.py
-|-- requirements.txt
-```
 
 These will get created after the scripts first run
 ```
@@ -42,18 +37,10 @@ These will get created after the scripts first run
 |-- email/
 |-- config.json/
 ```
-
-### Installation Steps
-
-1. Clone the repository: `git clone https://github.com/wehbs/reolink-rich-notifications.git` into the `/Applications` folder
-2. Navigate into the directory: `cd /Applications/reolink-rich-notifications`
-3. Install Python packages: `pip3 install -r requirements.txt`
-4. Install FFMpeg: `brew install ffmpeg`
-
 ## Configuration
 
 - Input your Pushover API key and token the first time the script is ran.
-- Configure your Reolink device to send emails to the SMTP server started by `pyemail.py`.
+- Configure your Reolink device to send emails to the SMTP server.
 
 ```
 SMTP Server: "Other"
@@ -69,42 +56,6 @@ Recipient Address 3: ""
 Email Content: "Text with Video" OR "Text with Picture"
 ```
 **Note**: Assign your Mac server a DHCP Reservation to ensure it retains the same IP address.
-
-## Usage
-
-### nvrnoti.py
-
-Run the `nvrnoti.py` script:
-
-```bash
-python3 /Applications/reolink-rich-notifcations/nvrnoti.py
-```
-
-**Note**: This script will also automatically start `pyemail.py`.
-
-### pyemail.py
-
-No need to manually start this script; it's automatically invoked by `nvrnoti.py`.
-
-### Auto-Start on Boot for Mac
-
-To ensure that the script runs automatically upon booting your Mac, follow these steps:
-1. **Open Script Editor**: You can find this in the Utilities folder within your Applications folder.
-2. **Create New Script**: Paste the following AppleScript code into the new document.
-```
-tell application "Terminal"
-	activate
-	do script "cd /Applications/reolink_notifications; python3 nvrnoti.py"
-end tell
-```
-3. **Save the Script**: Go to `File > Save` and save it as an Application. Store this application in your `reolink-rich-notifications` directory.
-4. **Open System Settings**: You can do this by clicking the Apple icon in the top-left corner of your screen and selecting "System Settings."
-5. **Add to Login Items**: 
-    - Search for and select "Login Items."
-    - Click the "+" button and add the saved AppleScript application.
-6. **Initial Approval**: Upon the next boot, you may have to manually approve the script to run. After this initial approval, it should run automatically on subsequent boots.
-
-**Note**: Executing this AppleScript will open a Terminal window each time you boot up your Mac.
 
 For additional customization or troubleshooting, consult the inline comments and documentation in the codebase.
 

@@ -329,10 +329,16 @@ class Handler(FileSystemEventHandler):
 
 
 if __name__ == '__main__':
-    # Send the initial push notification
-    send_push_notification(
-        "reolink-rich-notifications has been started. Enjoy!")
+    try:
+        # Send the initial push notification
+        send_push_notification(
+            "reolink-rich-notifications has been started. Enjoy!")
 
-    # Create a Watcher instance and run it
-    watcher = Watcher(watch_folder)
-    watcher.run()
+        # Create a Watcher instance and run it
+        watcher = Watcher(watch_folder)
+        watcher.run()
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        # This will signal the SMTP server thread to stop and do additional cleanup
+        script_terminated()

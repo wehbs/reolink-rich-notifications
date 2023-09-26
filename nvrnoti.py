@@ -195,6 +195,8 @@ def convert_mp4_to_gif(mp4_path, gif_path):
     max_retries = 3
     scale = 480  # Initial scale width
     while retries < max_retries:
+        if os.path.exists(gif_path):
+            os.remove(gif_path)
         try:
             input_file = mp4_path
             output_file = gif_path

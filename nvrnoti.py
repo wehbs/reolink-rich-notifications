@@ -341,4 +341,4 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"An error occurred: {e}")
         # This will signal the SMTP server thread to stop and do additional cleanup
-        script_terminated()
+        sys.exit(1)

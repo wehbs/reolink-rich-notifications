@@ -21,6 +21,7 @@ This repository enhances the notification capabilities of Reolink NVRs and Camer
 
 ### Software Requirements
 
+- MacOS
 - FFMpeg
 
 ### Installation Steps
